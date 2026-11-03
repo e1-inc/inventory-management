@@ -1,15 +1,21 @@
 <template>
-  <div class="profile-menu">
+  <div :class="['profile-menu', `profile-menu--${variant}`, { 'is-compact': compact }]">
     <button
+      type="button"
       class="profile-button"
+      aria-haspopup="menu"
+      :aria-expanded="isDropdownOpen"
+      :aria-label="compact ? currentUser.name : undefined"
+      :title="compact ? currentUser.name : undefined"
       @click="toggleDropdown"
       @blur="handleBlur"
     >
-      <div class="avatar">
+      <div class="avatar" aria-hidden="true">
         {{ getInitials(currentUser.name) }}
       </div>
-      <span class="profile-name">{{ currentUser.name }}</span>
+      <span v-if="!compact" class="profile-name">{{ currentUser.name }}</span>
       <svg
+        v-if="!compact"
         class="chevron"
         :class="{ 'chevron-open': isDropdownOpen }"
         width="16"
@@ -80,6 +86,14 @@ import { useI18n } from '../composables/useI18n'
 
 const { currentUser, logout, getInitials } = useAuth()
 const { t } = useI18n()
+
+defineProps({
+  // 'topbar' keeps the original look (dropdown opens downward); 'sidebar' is a full-width
+  // footer control whose dropdown opens upward, or to the right when compact.
+  variant: { type: String, default: 'topbar' },
+  // Compact shows only the avatar (used by the collapsed sidebar rail).
+  compact: { type: Boolean, default: false }
+})
 
 const isDropdownOpen = ref(false)
 const emit = defineEmits(['show-profile-details', 'show-tasks'])
@@ -265,6 +279,72 @@ const handleLogout = () => {
 
 .dropdown-item.logout:hover {
   background: #fef2f2;
+}
+
+/* Sidebar footer variant */
+.profile-menu--sidebar .profile-button {
+  width: 100%;
+  gap: var(--space-3);
+  height: 44px;
+  padding: 0 var(--space-2);
+  background: transparent;
+  border-color: transparent;
+  border-radius: var(--radius-md);
+}
+
+.profile-menu--sidebar .profile-button:hover {
+  background: var(--color-surface-muted);
+  border-color: transparent;
+}
+
+.profile-menu--sidebar .profile-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.profile-menu--sidebar .avatar {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  background: var(--color-accent);
+}
+
+.profile-menu--sidebar .profile-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The sidebar footer sits at the bottom of the viewport, so the chevron points up (closed)
+   and the dropdown opens upward instead of below the button. */
+.profile-menu--sidebar .chevron {
+  transform: rotate(180deg);
+}
+
+.profile-menu--sidebar .chevron-open {
+  transform: rotate(0deg);
+}
+
+.profile-menu--sidebar .dropdown-menu {
+  top: auto;
+  right: auto;
+  left: 0;
+  bottom: calc(100% + var(--space-2));
+  box-shadow: var(--shadow-md);
+}
+
+.profile-menu--sidebar.is-compact .profile-button {
+  justify-content: center;
+  padding: 0;
+}
+
+/* In the collapsed rail there is no room above, so the dropdown opens to the right of the rail. */
+.profile-menu--sidebar.is-compact .dropdown-menu {
+  bottom: 0;
+  left: calc(100% + var(--space-3));
 }
 
 .task-badge {
